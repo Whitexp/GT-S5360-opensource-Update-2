@@ -635,7 +635,7 @@ static int silabs_ts_probe(struct i2c_client *client, const struct i2c_device_id
 		goto err_input_dev_alloc_failed;
 	}
 	
-	ts->input_dev->name = "sec_touchscreen ";
+	ts->input_dev->name = "sec_touchscreen";
     
 	ts->input_dev->evbit[0] = BIT_MASK(EV_ABS) | BIT_MASK(EV_KEY);
 	
