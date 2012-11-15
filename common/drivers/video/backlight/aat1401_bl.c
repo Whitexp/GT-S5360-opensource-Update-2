@@ -55,7 +55,7 @@ static int backlight_mode=1;
 
 #define MAX_BRIGHTNESS_IN_BLU	33
 #if defined(CONFIG_BACKLIGHT_TOTORO)
-#define DIMMING_VALUE		2
+#define DIMMING_VALUE		1
 #elif defined(CONFIG_BACKLIGHT_LUISA)
 #define DIMMING_VALUE		1
 #elif defined(CONFIG_BACKLIGHT_TASSVE)
@@ -66,7 +66,7 @@ static int backlight_mode=1;
 #define DIMMING_VALUE		1
 #endif
 #define MAX_BRIGHTNESS_VALUE	255
-#define MIN_BRIGHTNESS_VALUE	30
+#define MIN_BRIGHTNESS_VALUE	21
 #define BACKLIGHT_DEBUG 0
 #define BACKLIGHT_SUSPEND 0
 #define BACKLIGHT_RESUME 1
@@ -92,7 +92,8 @@ struct brt_value{
 
 #if defined(CONFIG_BACKLIGHT_TOTORO)
 struct brt_value brt_table_ktd[] = {
-	{ MIN_BRIGHTNESS_VALUE,  2 }, // Min pulse 27(33-6) by HW 
+	{ MIN_BRIGHTNESS_VALUE,  1 }, // Min pulse 27(33-6) by HW 
+	{ 30,  2 }, 
 	{ 39,  3 }, 
 	{ 48,  4 }, 
 	{ 57,  5 }, 
