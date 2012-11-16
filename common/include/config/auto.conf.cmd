@@ -103,6 +103,7 @@ deps_config := \
 	../modules/drivers/video/bmem/Kconfig \
 	../modules/Kconfig.priv \
 	../modules/Kconfig \
+	drivers/samsung/Kconfig \
 	drivers/platform/x86/Kconfig \
 	drivers/platform/Kconfig \
 	drivers/staging/msm/Kconfig \
