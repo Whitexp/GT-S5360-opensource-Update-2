@@ -65,7 +65,7 @@ DEFINE_MUTEX(spa_charger_mutex);
 /*Macros to control schedule frequency of charging monitor work queue - with
  * and without charger present */
 #define BATTERY_LVL_MON_INTERVAL_WHILE_CHARGING		10000 
-#define	BATTERY_LVL_MON_INTERVAL			90000 /* 1,5 min */
+#define	BATTERY_LVL_MON_INTERVAL			60000 /* 1 min */
 //#define BATTERY_LVL_MON_INTERVAL_WHILE_CHARGING		10000 /* 10 sec */
 //#define	BATTERY_LVL_MON_INTERVAL			30000 /* 30 sec */
 #define BAT_TEMP_EXCEED_LIMIT_COUNT_MAX			3
@@ -90,13 +90,13 @@ DEFINE_MUTEX(spa_charger_mutex);
 
 #if 0
 #define BATT_FULL_VOLT		4200
-#define BATT_LEVEL5_VOLT	3950
-#define BATT_LEVEL4_VOLT	3850
-#define BATT_LEVEL3_VOLT	3750
-#define BATT_LEVEL2_VOLT	3700
-#define BATT_LEVEL1_VOLT	3650
+#define BATT_LEVEL5_VOLT	3970
+#define BATT_LEVEL4_VOLT	3870
+#define BATT_LEVEL3_VOLT	3790
+#define BATT_LEVEL2_VOLT	3740
+#define BATT_LEVEL1_VOLT	3700
 #define BATT_LEVEL0_VOLT	3600
-#define BATT_LEVEL0_1_VOLT	3550
+#define BATT_LEVEL0_1_VOLT	3540
 #define BATT_LOW_VOLT		3400
 #endif
 #define HIGH_SUSPEND_TEMP	650

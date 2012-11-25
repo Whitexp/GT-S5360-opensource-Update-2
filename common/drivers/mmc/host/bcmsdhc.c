@@ -2364,10 +2364,6 @@ static int __init bcmsdhc_probe(struct platform_device *pdev)
 	sd_inserted = host->card_present;
 	
 	bcmsdhc_init(host, SOFT_RESET_ALL);
-#ifdef CONFIG_HAS_WAKELOCK
-	wake_lock_init(&host->sdhc_wakelock, WAKE_LOCK_SUSPEND,
-		       dev_name(&pdev->dev));
-#endif
 
 #ifdef CONFIG_MMC_DEBUG
 /*      bcmsdhc_dumpregs(host); */
@@ -2441,10 +2437,6 @@ static int bcmsdhc_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_LEDS_CLASS
 	led_classdev_unregister(&host->led);
-#endif
-
-#ifdef CONFIG_HAS_WAKELOCK
-	wake_lock_destroy(&host->sdhc_wakelock);
 #endif
 
 	sdio_remove_qos_req(host);

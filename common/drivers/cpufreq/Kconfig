@@ -53,10 +53,6 @@ config CPU_FREQ_STAT_DETAILS
 
 	  If in doubt, say N.
 
-config BACEM_TWEAK
-	tristate "bacem_tweak"
-
-
 choice
 	prompt "Default CPUFreq governor"
 	default CPU_FREQ_DEFAULT_GOV_USERSPACE if CPU_FREQ_SA1100 || CPU_FREQ_SA1110
