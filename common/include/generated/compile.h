@@ -1,8 +1,8 @@
-/* This file is auto generated, version 47 */
+/* This file is auto generated, version 48 */
 /*  PREEMPT */
 #define UTS_MACHINE "arm"
-#define UTS_VERSION "#47 PREEMPT Fri Nov 16 03:31:13 BRST 2012"
-#define LINUX_COMPILE_TIME "03:31:13"
+#define UTS_VERSION "#48 PREEMPT Sun Nov 25 17:37:38 BRST 2012"
+#define LINUX_COMPILE_TIME "17:37:38"
 #define LINUX_COMPILE_BY "White-1.0"
 #define LINUX_COMPILE_HOST "By-Whitexp"
 #define LINUX_COMPILE_DOMAIN "(none)"
