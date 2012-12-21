@@ -551,10 +551,6 @@ struct platform_device bcm215xx_lcdc_device = {
 
 #define BCM_CORECLK_TURBO	BCM21553_CORECLK_KHZ_832
 #define BCM_CORE_CLK_NORMAL	BCM21553_CORECLK_KHZ_312
-#define BCM_CORE_CLK_LOWA	BCM21553_CORECLK_KHZ_156
-#define BCM_CORE_CLK_MEDA	BCM21553_CORECLK_KHZ_468
-#define BCM_CORE_CLK_MEDB	BCM21553_CORECLK_KHZ_624
-//#define BCM_CORE_CLK_MEDC	(780U*1000)
 
 #if defined(CONFIG_BCM_CPU_FREQ)
 /*********************************************************************
@@ -563,21 +559,13 @@ struct platform_device bcm215xx_lcdc_device = {
 
 /* Indices for the voltage to frequency mapping table */
 enum {
-	BCM_LOWA_MODE,
 	BCM_NORMAL_MODE,
-	BCM_MEDA_MODE,
-	BCM_MEDB_MODE,
-//	BCM_MEDC_MODE,
 	BCM_TURBO_MODE,
 };
 
 /* Voltage-Frequency mapping for BCM21553 CPU0 */
 static struct bcm_freq_tbl bcm215xx_cpu0_freq_tbl[] = {
-	FTBL_INIT(BCM_CORE_CLK_LOWA / 1000, 1160000),
-	FTBL_INIT(BCM_CORE_CLK_NORMAL / 1000, 11800000),
-	FTBL_INIT(BCM_CORE_CLK_MEDA / 1000, 1200000),
-	FTBL_INIT(BCM_CORE_CLK_MEDB / 1000, 1220000),
-//	FTBL_INIT(BCM_CORE_CLK_MEDC / 1000, 1240000),
+	FTBL_INIT(BCM_CORE_CLK_NORMAL / 1000, 1200000),
 	FTBL_INIT(BCM_CORECLK_TURBO / 1000, 1360000),
 };
 /* BCM21553 CPU info */
@@ -585,7 +573,7 @@ static struct bcm_cpu_info bcm215xx_cpu_info[] = {
 	[0] = {
 		.freq_tbl = bcm215xx_cpu0_freq_tbl,
 		.num_freqs = ARRAY_SIZE(bcm215xx_cpu0_freq_tbl),
-		.cpu_latency = 1000000,
+		.cpu_latency = CPUFREQ_ETERNAL,
 		.cpu_clk = "arm11",
 		.appspll_en_clk = "appspll_en",
 		.cpu_regulator = "csr_nm2",
@@ -614,10 +602,7 @@ struct platform_device bcm21553_cpufreq_drv = {
 
 static struct bcm21553_cpufreq_gov_plat bcm21553_cpufreq_gov_plat = {
 	.freq_turbo = BCM_CORECLK_TURBO,
-	.freq_medb = BCM_CORE_CLK_MEDB,
-	.freq_meda = BCM_CORE_CLK_MEDA,
 	.freq_normal = BCM_CORE_CLK_NORMAL,
-	.freq_lowa = BCM_CORE_CLK_LOWA,
 };
 
 struct platform_device bcm21553_cpufreq_gov = {
@@ -635,11 +620,11 @@ struct platform_device bcm21553_cpufreq_gov = {
  *********************************************************************/
 
 #define NM2_FF_VOLTAGE_NORMAL	1180000
-#define NM2_TT_VOLTAGE_NORMAL	1180000
+#define NM2_TT_VOLTAGE_NORMAL	1240000
 #define NM2_SS_VOLTAGE_NORMAL	1300000
 
 #define NM2_FF_VOLTAGE_TURBO	1220000
-#define NM2_TT_VOLTAGE_TURBO	1220000
+#define NM2_TT_VOLTAGE_TURBO	1300000
 #define NM2_SS_VOLTAGE_TURBO	1360000
 
 #define NM_FF_VOLTAGE		1320000
@@ -677,10 +662,7 @@ static struct silicon_type_info part_type_ff = {
  */
 static void bcm215xx_avs_notify(int silicon_type)
 {
-	int lowa;	
 	int normal;
-	int meda;
-	int medb;
 	int turbo;
 
 	pr_info("%s: silicon_type : %d\n", __func__, silicon_type);
@@ -688,52 +670,32 @@ static void bcm215xx_avs_notify(int silicon_type)
 	switch(silicon_type)
 	{
 	case SILICON_TYPE_SLOW:
-		lowa = part_type_ss.nm2_normal_voltage;
 		normal = part_type_ss.nm2_normal_voltage;
-		meda = part_type_ss.nm2_normal_voltage;
-		medb = part_type_ss.nm2_normal_voltage;
 		turbo = part_type_ss.nm2_turbo_voltage;
 		break;
 
 	case SILICON_TYPE_TYPICAL:
-		lowa = part_type_tt.nm2_normal_voltage;
 		normal = part_type_tt.nm2_normal_voltage;
-		meda = part_type_tt.nm2_normal_voltage;
-		medb = part_type_tt.nm2_normal_voltage;
 		turbo = part_type_tt.nm2_turbo_voltage;
 		break;
 
 	case SILICON_TYPE_FAST:
-		lowa = part_type_ff.nm2_normal_voltage;
 		normal = part_type_ff.nm2_normal_voltage;
-		meda = part_type_ff.nm2_normal_voltage;
-		medb = part_type_ff.nm2_normal_voltage;
 		turbo = part_type_ff.nm2_turbo_voltage;
 		break;
 
 	default:
-		lowa = part_type_ss.nm2_normal_voltage;
 		normal = part_type_ss.nm2_normal_voltage;
-		meda = part_type_ss.nm2_normal_voltage;
-		medb = part_type_ss.nm2_normal_voltage;
 		turbo = part_type_ss.nm2_turbo_voltage;
 		break;
 	}
 
-	{
-		bcm215xx_cpu0_freq_tbl[BCM_LOWA_MODE].cpu_voltage =
-			(u32)normal;
+	if (normal >= 0)
 		bcm215xx_cpu0_freq_tbl[BCM_NORMAL_MODE].cpu_voltage =
 			(u32)normal;
-		bcm215xx_cpu0_freq_tbl[BCM_MEDA_MODE].cpu_voltage =
-			(u32)normal;
-		bcm215xx_cpu0_freq_tbl[BCM_MEDB_MODE].cpu_voltage =
-			(u32)normal;
-		/*bcm215xx_cpu0_freq_tbl[BCM_MEDC_MODE].cpu_voltage =
-			(u32)normal;*/
+	if (turbo >= 0)
 		bcm215xx_cpu0_freq_tbl[BCM_TURBO_MODE].cpu_voltage =
 			(u32)turbo;
-	}
 }
 #else
 #define bcm215xx_avs_notify NULL

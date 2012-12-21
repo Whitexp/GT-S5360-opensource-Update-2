@@ -59,21 +59,6 @@ int rcu_scheduler_active __read_mostly;
 EXPORT_SYMBOL_GPL(rcu_scheduler_active);
 #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
 
-/* Controls for rcu_cbs() kthread, replacing RCU_SOFTIRQ used previously. */
-static struct task_struct *rcu_cbs_task;
-static DECLARE_WAIT_QUEUE_HEAD(rcu_cbs_wq);
-static unsigned long have_rcu_cbs;
-static void invoke_rcu_cbs(void);
-
-/* Forward declarations for rcutiny_plugin.h. */
-static void rcu_process_callbacks(struct rcu_ctrlblk *rcp);
-static int rcu_cbs(void *arg);
-static void __call_rcu(struct rcu_head *head,
-		       void (*func)(struct rcu_head *rcu),
-		       struct rcu_ctrlblk *rcp);
-
-#include "rcutiny_plugin.h"
-
 #ifdef CONFIG_NO_HZ
 
 static long rcu_dynticks_nesting = 1;
@@ -130,7 +115,7 @@ void rcu_sched_qs(int cpu)
 {
 	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
 	    rcu_qsctr_help(&rcu_bh_ctrlblk))
-		invoke_rcu_cbs();
+		raise_softirq(RCU_SOFTIRQ);
 }
 
 /*
@@ -139,7 +124,7 @@ void rcu_sched_qs(int cpu)
 void rcu_bh_qs(int cpu)
 {
 	if (rcu_qsctr_help(&rcu_bh_ctrlblk))
-		invoke_rcu_cbs();
+		raise_softirq(RCU_SOFTIRQ);
 }
 
 /*
@@ -155,14 +140,13 @@ void rcu_check_callbacks(int cpu, int user)
 		rcu_sched_qs(cpu);
 	else if (!in_softirq())
 		rcu_bh_qs(cpu);
-	rcu_preempt_check_callbacks();
 }
 
 /*
- * Invoke the RCU callbacks on the specified rcu_ctrlkblk structure
- * whose grace period has elapsed.
+ * Helper function for rcu_process_callbacks() that operates on the
+ * specified rcu_ctrlkblk structure.
  */
-static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 {
 	struct rcu_head *next, *list;
 	unsigned long flags;
@@ -178,7 +162,6 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 	*rcp->donetail = NULL;
 	if (rcp->curtail == rcp->donetail)
 		rcp->curtail = &rcp->rcucblist;
-	rcu_preempt_remove_callbacks(rcp);
 	rcp->donetail = &rcp->rcucblist;
 	local_irq_restore(flags);
 
@@ -186,53 +169,18 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 	while (list) {
 		next = list->next;
 		prefetch(next);
-		debug_rcu_head_unqueue(list);
-		local_bh_disable();
 		list->func(list);
-		local_bh_enable();
 		list = next;
 	}
 }
 
 /*
- * This kthread invokes RCU callbacks whose grace periods have
- * elapsed.  It is awakened as needed, and takes the place of the
- * RCU_SOFTIRQ that was used previously for this purpose.
- * This is a kthread, but it is never stopped, at least not until
- * the system goes down.
+ * Invoke any callbacks whose grace period has completed.
  */
-static int rcu_cbs(void *arg)
+static void rcu_process_callbacks(struct softirq_action *unused)
 {
-	unsigned long work;
-	unsigned long flags;
-
-	for (;;) {
-		wait_event(rcu_cbs_wq, have_rcu_cbs != 0);
-		local_irq_save(flags);
-		work = have_rcu_cbs;
-		have_rcu_cbs = 0;
-		local_irq_restore(flags);
-		if (work) {
-			rcu_process_callbacks(&rcu_sched_ctrlblk);
-			rcu_process_callbacks(&rcu_bh_ctrlblk);
-			rcu_preempt_process_callbacks();
-		}
-	}
-
-	return 0;  /* Not reached, but needed to shut gcc up. */
-}
-
-/*
- * Wake up rcu_cbs() to process callbacks now eligible for invocation.
- */
-static void invoke_rcu_cbs(void)
-{
-	unsigned long flags;
-
-	local_irq_save(flags);
-	have_rcu_cbs = 1;
-	wake_up(&rcu_cbs_wq);
-	local_irq_restore(flags);
+	__rcu_process_callbacks(&rcu_sched_ctrlblk);
+	__rcu_process_callbacks(&rcu_bh_ctrlblk);
 }
 
 /*
@@ -263,7 +211,6 @@ static void __call_rcu(struct rcu_head *head,
 {
 	unsigned long flags;
 
-	debug_rcu_head_queue(head);
 	head->func = func;
 	head->next = NULL;
 
@@ -274,15 +221,15 @@ static void __call_rcu(struct rcu_head *head,
 }
 
 /*
- * Post an RCU callback to be invoked after the end of an RCU-sched grace
+ * Post an RCU callback to be invoked after the end of an RCU grace
  * period.  But since we have but one CPU, that would be after any
  * quiescent state.
  */
-void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
 {
 	__call_rcu(head, func, &rcu_sched_ctrlblk);
 }
-EXPORT_SYMBOL_GPL(call_rcu_sched);
+EXPORT_SYMBOL_GPL(call_rcu);
 
 /*
  * Post an RCU bottom-half callback to be invoked after any subsequent
@@ -293,6 +240,20 @@ void call_rcu_bh(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
 	__call_rcu(head, func, &rcu_bh_ctrlblk);
 }
 EXPORT_SYMBOL_GPL(call_rcu_bh);
+
+void rcu_barrier(void)
+{
+	struct rcu_synchronize rcu;
+
+	init_rcu_head_on_stack(&rcu.head);
+	init_completion(&rcu.completion);
+	/* Will wake me after RCU finished. */
+	call_rcu(&rcu.head, wakeme_after_rcu);
+	/* Wait for it. */
+	wait_for_completion(&rcu.completion);
+	destroy_rcu_head_on_stack(&rcu.head);
+}
+EXPORT_SYMBOL_GPL(rcu_barrier);
 
 void rcu_barrier_bh(void)
 {
@@ -322,12 +283,9 @@ void rcu_barrier_sched(void)
 }
 EXPORT_SYMBOL_GPL(rcu_barrier_sched);
 
-/*
- * Spawn the kthread that invokes RCU callbacks.
- */
-static int __init rcu_spawn_kthreads(void)
+void __init rcu_init(void)
 {
-	rcu_cbs_task = kthread_run(rcu_cbs, NULL, "rcu_cbs");
-	return 0;
+	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
 }
-early_initcall(rcu_spawn_kthreads);
+
+#include "rcutiny_plugin.h"

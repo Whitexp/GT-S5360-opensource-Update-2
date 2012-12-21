@@ -43,24 +43,6 @@ config CFQ_GROUP_IOSCHED
 	---help---
 	  Enable group IO scheduling in CFQ.
 
-config IOSCHED_VR
-	tristate "v/r I/O scheduler"
-	default y
-	---help---
-	  The deadline I/O scheduler is simple and compact. It will provide
-	  CSCAN service with FIFO expiration of requests, switching to
-	  a new point in the service tree and doing a batch of IO from there
-	  in case of expiry.
-
-config IOSCHED_SIO
-	tristate "sio I/O scheduler"
-	default y
-	---help---
-	  The deadline I/O scheduler is simple and compact. It will provide
-	  CSCAN service with FIFO expiration of requests, switching to
-	  a new point in the service tree and doing a batch of IO from there
-	  in case of expiry.
-
 choice
 	prompt "Default I/O scheduler"
 	default DEFAULT_CFQ
@@ -74,12 +56,6 @@ choice
 	config DEFAULT_CFQ
 		bool "CFQ" if IOSCHED_CFQ=y
 
-	config DEFAULT_VR
-		bool "VR" if IOSCHED_VR=y
-
-	config DEFAULT_SIO
-		bool "SIO" if IOSCHED_SIO=y
-
 	config DEFAULT_NOOP
 		bool "No-op"
 
@@ -90,8 +66,6 @@ config DEFAULT_IOSCHED
 	default "deadline" if DEFAULT_DEADLINE
 	default "cfq" if DEFAULT_CFQ
 	default "noop" if DEFAULT_NOOP
-	default "vr" if DEFAULT_VR
-	default "sio" if DEFAULT_SIO
 
 endmenu
 

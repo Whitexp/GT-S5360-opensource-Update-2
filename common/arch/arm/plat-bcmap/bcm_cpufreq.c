@@ -322,9 +322,8 @@ static int bcm_cpufreq_set_speed(struct cpufreq_policy *policy,
 	struct bcm_cpufreq *b = &bcm_cpufreq[policy->cpu];
 	struct bcm_cpu_info *info = &b->plat->info[policy->cpu];
 	unsigned int freq_turbo, index_turbo;
-	unsigned int freq_pll, index_pll;//kats-added to enable pll stuff
 	int index;
-	int ret = 0;//kats-orig int ret;
+	int ret;
 
 	/* Lookup the next frequency */
 	if (cpufreq_frequency_table_target(policy, b->bcm_freqs_table,
@@ -335,8 +334,6 @@ static int bcm_cpufreq_set_speed(struct cpufreq_policy *policy,
 	freqs.cpu = 0;
 	freqs.old = bcm_cpufreq_get_speed(0);
 	freqs.new = b->bcm_freqs_table[index].frequency;
-
-	freq_pll = 156000;
 
 	if (freqs.old == freqs.new)
 		return 0;
@@ -370,11 +367,11 @@ static int bcm_cpufreq_set_speed(struct cpufreq_policy *policy,
 	/* Get the turbo mode frequency. Switching to and from turbo mode
 	 * needs special handling.
 	 */
-	index_turbo = info->index_turbo - 1;
+	index_turbo = info->index_turbo;
 	freq_turbo = info->freq_tbl[index_turbo].cpu_freq * 1000;
 
 	/* Set APPS PLL enable bit when entering to turbo mode */
-	if (freqs.new > freq_pll)//kats-mod-pll
+	if (freqs.new == freq_turbo)
 		clk_enable(b->appspll_en_clk);
 
 	/* freq.new will be in kHz. convert it to Hz for clk_set_rate */
@@ -383,7 +380,7 @@ static int bcm_cpufreq_set_speed(struct cpufreq_policy *policy,
 		ret = clk_set_rate(b->cpu_clk, freqs.new * 1000);
 
 	/* Clear APPS PLL enable bit when entering to normal mode */
-	if (freqs.new <= freq_pll)//kats-mod-pll
+	if (freqs.new != freq_turbo)
 		clk_disable(b->appspll_en_clk);
 
 	/* If we are switching to a lower frequency, we can potentially
@@ -454,7 +451,7 @@ static int bcm_cpufreq_init(struct cpufreq_policy *policy)
 	/* Set default policy and cpuinfo */
 	policy->cur = bcm_cpufreq_get_speed(0);
 	/* FIXME: Tune this value */
-	policy->cpuinfo.transition_latency = 1000000;
+	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
 
 	ret = bcm_create_cpufreqs_table(policy, &(b->bcm_freqs_table));
 	if (ret) {
@@ -469,7 +466,6 @@ static int bcm_cpufreq_init(struct cpufreq_policy *policy)
 			__func__);
 		goto err_cpuinfo;
 	}
-	cpufreq_frequency_table_get_attr(b->bcm_freqs_table, policy->cpu);
 	b->policy = policy;
 
 	return 0;
@@ -490,7 +486,6 @@ static int bcm_cpufreq_exit(struct cpufreq_policy *policy)
 {
 	struct bcm_cpufreq *b = &bcm_cpufreq[policy->cpu];
 	pr_info("%s\n", __func__);
-	cpufreq_frequency_table_put_attr(policy->cpu);
 
 	kfree(b->bcm_freqs_table);
 	regulator_put(b->cpu_regulator);
