@@ -817,4 +817,3 @@ struct platform_device v3d_device = {
     .id     =   -1,
 };
 #endif
-
