@@ -1,0 +1,11 @@
+--- drivers/usb/core/hcd.c
++++ drivers/usb/core/hcd.c
+@@ -1874,7 +1874,7 @@
+ 
+ 	/* Streams only apply to bulk endpoints. */
+ 	for (i = 0; i < num_eps; i++)
+-		if (!usb_endpoint_xfer_bulk(&eps[i]->desc))
++		if (!eps[i] || !usb_endpoint_xfer_bulk(&eps[i]->desc))
+ 			return;
+ 
+ 	hcd->driver->free_streams(hcd, dev, eps, num_eps, mem_flags);

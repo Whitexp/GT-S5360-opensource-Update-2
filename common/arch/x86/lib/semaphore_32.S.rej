@@ -1,0 +1,11 @@
+--- arch/x86/lib/semaphore_32.S
++++ arch/x86/lib/semaphore_32.S
+@@ -36,7 +36,7 @@
+  */
+ #ifdef CONFIG_SMP
+ ENTRY(__write_lock_failed)
+-	CFI_STARTPROC simple
++	CFI_STARTPROC
+ 	FRAME
+ 2: 	LOCK_PREFIX
+ 	addl	$ RW_LOCK_BIAS,(%eax)

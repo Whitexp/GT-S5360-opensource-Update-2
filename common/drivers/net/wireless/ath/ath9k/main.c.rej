@@ -1,0 +1,20 @@
+--- drivers/net/wireless/ath/ath9k/main.c
++++ drivers/net/wireless/ath/ath9k/main.c
+@@ -1124,6 +1124,8 @@
+ 		  "Starting driver with initial channel: %d MHz\n",
+ 		  curchan->center_freq);
+ 
++	ath9k_ps_wakeup(sc);
++
+ 	mutex_lock(&sc->mutex);
+ 
+ 	if (ath9k_wiphy_started(sc)) {
+@@ -1238,6 +1240,8 @@
+ mutex_unlock:
+ 	mutex_unlock(&sc->mutex);
+ 
++	ath9k_ps_restore(sc);
++
+ 	return r;
+ }
+ 

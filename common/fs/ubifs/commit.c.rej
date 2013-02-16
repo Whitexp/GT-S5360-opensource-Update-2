@@ -1,0 +1,11 @@
+--- fs/ubifs/commit.c
++++ fs/ubifs/commit.c
+@@ -519,7 +519,7 @@
+ 	size_t sz;
+ 
+ 	if (!(ubifs_chk_flags & UBIFS_CHK_OLD_IDX))
+-		goto out;
++		return 0;
+ 
+ 	INIT_LIST_HEAD(&list);
+ 

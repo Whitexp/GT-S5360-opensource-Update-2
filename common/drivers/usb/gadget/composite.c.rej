@@ -1,0 +1,12 @@
+--- drivers/usb/gadget/composite.c
++++ drivers/usb/gadget/composite.c
+@@ -838,7 +838,8 @@
+ 		 */
+ 		switch (ctrl->bRequestType & USB_RECIP_MASK) {
+ 		case USB_RECIP_INTERFACE:
+-			f = cdev->config->interface[intf];
++			if (cdev->config)
++				f = cdev->config->interface[intf];
+ 			break;
+ 
+ 		case USB_RECIP_ENDPOINT:
